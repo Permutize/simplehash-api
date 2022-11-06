@@ -1,0 +1,53 @@
+{
+  "name": "simplehash-api",
+  "version": "0.1.4",
+  "description": "Simplehash API Library",
+  "homepage": "https://github.com/permutize/simplehash-api",
+  "repository": "https://github.com/permutize/simplehash-api",
+  "engines": {
+    "node": ">= 14.0.0"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "clean": "rimraf coverage build tmp",
+    "prebuild": "npm run lint",
+    "build": "tsc -p tsconfig.json",
+    "build:watch": "tsc -w -p tsconfig.json",
+    "build:release": "npm run clean && tsc -p tsconfig.release.json",
+    "lint": "eslint . --ext .ts --ext .mts",
+    "test": "jest --coverage",
+    "prettier": "prettier --config .prettierrc --write .",
+    "test:watch": "jest --watch"
+  },
+  "keywords": [
+    "simplehash",
+    "api",
+    "library"
+  ],
+  "author": "Haha.me",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^18.11.8",
+    "@typescript-eslint/eslint-plugin": "^5.34.0",
+    "@typescript-eslint/parser": "^5.34.0",
+    "eslint": "^8.22.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-node": "^4.1.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-jsx-a11y": "^6.6.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-react": "^7.30.1",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^2.7.1",
+    "typescript": "^4.7.4"
+  },
+  "dependencies": {
+    "axios": "^0.27.2"
+  }
+}
