@@ -35,4 +35,4 @@ import * as SimpleHash from 'simplehash-api';
 * Add more tests
 * Add more documentation
 
-&copy; 2022, [@jfkz](https://github.com/jfkz)
+&copy; 2022, [@haha-me](https://github.com/permutize)
