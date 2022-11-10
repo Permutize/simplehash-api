@@ -50,7 +50,7 @@ class SimpleHashAPI {
     const chain = chains.join(',');
     const wallet = walletAddresses.join(',');
     const url = `owners?chains=${chain}&wallet_addresses=${wallet}`;
-    return this.getPaginated<NFT>(url, 'nfts');
+    return this.getPaginatedSingleThread<NFT>(url, 'nfts');
   }
 
   /**
@@ -64,7 +64,7 @@ class SimpleHashAPI {
     const chain = chains.join(',');
     const wallet = walletAddresses.join(',');
     const url = `transfers/wallets?chains=${chain}&wallet_addresses=${wallet}&order_by=${orderBy}`;
-    return this.getPaginated<Transfer>(url, 'transfers');
+    return this.getPaginatedSingleThread<Transfer>(url, 'transfers');
   }
 
   /**
@@ -185,6 +185,24 @@ class SimpleHashAPI {
     return results;
   }
 
+  private async getPaginatedSingleThread<T>(path: string, fieldName: string): Promise<T[]> {
+    const url = `${this.options.endPoint}${path}`;
+    const results = [];
+
+    const { next, [fieldName]: data } = await this.get<any>(url);
+    results.push(...data);
+
+    let nextUrl = next
+    if (nextUrl) {
+      while (nextUrl != null) {
+        const { next, [fieldName]: data } = await this.get<any>(nextUrl);
+        nextUrl = next
+        results.push(...data)
+      }
+    }
+    return results;
+  }
+
   private async get<T>(url: string, params = {}): Promise<T> {
     await this.waitForFloodControl();
     try {
@@ -219,7 +237,7 @@ class SimpleHashAPI {
   }
 }
 
-function createApi (apiKey: string, options?: Partial<Options>) {
+function createApi(apiKey: string, options?: Partial<Options>) {
   return new SimpleHashAPI(apiKey, options);
 }
 
