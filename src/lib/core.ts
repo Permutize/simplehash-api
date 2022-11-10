@@ -50,7 +50,7 @@ class SimpleHashAPI {
     const chain = chains.join(',');
     const wallet = walletAddresses.join(',');
     const url = `owners?chains=${chain}&wallet_addresses=${wallet}`;
-    return this.getPaginated<NFT>(url, 'nfts');
+    return this.getPaginatedNfts<NFT>(url, 'nfts');
   }
 
   /**
@@ -64,7 +64,7 @@ class SimpleHashAPI {
     const chain = chains.join(',');
     const wallet = walletAddresses.join(',');
     const url = `transfers/wallets?chains=${chain}&wallet_addresses=${wallet}&order_by=${orderBy}`;
-    return this.getPaginated<Transfer>(url, 'transfers');
+    return this.getPaginatedNfts<Transfer>(url, 'transfers');
   }
 
   /**
@@ -185,6 +185,40 @@ class SimpleHashAPI {
     return results;
   }
 
+  private async getPaginatedNfts<T>(path: string, fieldName: string): Promise<T[]> {
+    const url = `${this.options.endPoint}${path}`;
+    const results = [];
+
+    const { next, [fieldName]: data, count } = await this.get<any>(url, { count: 1 });
+    results.push(...data);
+    const nextRegex = new RegExp('.0+([0-9]+)__next$', 'gm');
+
+    let nextUrl = next
+    if (nextUrl) {
+      const _cursorHash: string = next.split('cursor=')[1];
+      const cursor = Buffer.from(_cursorHash, 'base64').toString();
+      const sizeString = nextRegex.exec(cursor)?.[1];
+      const size = parseInt(sizeString || '50', 10);
+      const threadsCount = Math.min(Math.ceil(count / size), this.options.parallelRequests);
+
+      if (this.options.debugMode) {
+        console.debug(`Selected threads count: ${threadsCount}`);
+      }
+
+      const promises = [];
+      while (nextUrl != null) {
+        const { next, [fieldName]: data } = await this.get<any>(nextUrl);
+        nextUrl = next
+        promises.push(...data)
+      }
+      const responses = await Promise.all(promises);
+
+      results.push(...responses);
+
+    }
+    return results;
+  }
+
   private async get<T>(url: string, params = {}): Promise<T> {
     await this.waitForFloodControl();
     try {
@@ -219,7 +253,7 @@ class SimpleHashAPI {
   }
 }
 
-function createApi (apiKey: string, options?: Partial<Options>) {
+function createApi(apiKey: string, options?: Partial<Options>) {
   return new SimpleHashAPI(apiKey, options);
 }
 
