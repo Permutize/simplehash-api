@@ -50,7 +50,7 @@ class SimpleHashAPI {
     const chain = chains.join(',');
     const wallet = walletAddresses.join(',');
     const url = `owners?chains=${chain}&wallet_addresses=${wallet}`;
-    return this.getPaginated<NFT>(url, 'nfts');
+    return this.getPaginatedSingleThread<NFT>(url, 'nfts');
   }
 
   /**
@@ -64,7 +64,7 @@ class SimpleHashAPI {
     const chain = chains.join(',');
     const wallet = walletAddresses.join(',');
     const url = `transfers/wallets?chains=${chain}&wallet_addresses=${wallet}&order_by=${orderBy}`;
-    return this.getPaginated<Transfer>(url, 'transfers');
+    return this.getPaginatedSingleThread<Transfer>(url, 'transfers');
   }
 
   /**
@@ -144,58 +144,62 @@ class SimpleHashAPI {
 
     const nextRegex = new RegExp('.0+([0-9]+)__next$', 'gm');
 
-    /** @todo Simplification */
     if (next) {
-      if (!count) {
-        /** We don't have count, so we have to follow the next links  */
-        let nextUrl = next
-        if (nextUrl) {
-          while (nextUrl != null) {
-            const { next, [fieldName]: data } = await this.get<any>(nextUrl);
-            nextUrl = next
-            results.push(...data)
+      const _cursorHash: string = next.split('cursor=')[1];
+      const cursor = Buffer.from(_cursorHash, 'base64').toString();
+      const sizeString = nextRegex.exec(cursor)?.[1];
+      const size = parseInt(sizeString || '50', 10);
+
+      const threadsCount = Math.min(Math.ceil(count / size), this.options.parallelRequests);
+
+      if (this.options.debugMode) {
+        console.debug(`Selected threads count: ${threadsCount}`);
+      }
+
+      let position = size;
+      while (position < count) {
+
+        let i = 0;
+        const promises = [];
+
+        while (i < threadsCount && position < count) {
+          const nullDiff = Math.floor(Math.log10(position)) - Math.floor(Math.log10(size));
+          const prefix = '0'.repeat(nullDiff);
+          const newCursor = cursor.replace(prefix + size.toString(), position.toString());
+          if (this.options.debugMode) {
+            console.debug(newCursor);
           }
-        }
-      } else {
-        /** Multithread flow - we have count so we can create a bunch of promises with next links */
-        const _cursorHash: string = next.split('cursor=')[1];
-        const cursor = Buffer.from(_cursorHash, 'base64').toString();
-        const sizeString = nextRegex.exec(cursor)?.[1];
-        const size = parseInt(sizeString || '50', 10);
-
-        const threadsCount = Math.min(Math.ceil(count / size), this.options.parallelRequests);
-
-        if (this.options.debugMode) {
-          console.debug(`Selected threads count: ${threadsCount}`);
+          const cursorHash = Buffer.from(newCursor, 'utf8').toString('base64');
+          promises.push(this.get<any>(url, { cursor: cursorHash }));
+          position += size;
+          i++;
         }
 
-        let position = size;
-        while (position < count) {
-
-          let i = 0;
-          const promises = [];
-
-          while (i < threadsCount && position < count) {
-            const nullDiff = Math.floor(Math.log10(position)) - Math.floor(Math.log10(size));
-            const prefix = '0'.repeat(nullDiff);
-            const newCursor = cursor.replace(prefix + size.toString(), position.toString());
-            if (this.options.debugMode) {
-              console.debug(newCursor);
-            }
-            const cursorHash = Buffer.from(newCursor, 'utf8').toString('base64');
-            promises.push(this.get<any>(url, { cursor: cursorHash }));
-            position += size;
-            i++;
-          }
-
-          const responses = await Promise.all(promises);
-          responses.forEach((response) => {
-            results.push(...response[fieldName]);
-          });
-        }
+        const responses = await Promise.all(promises);
+        responses.forEach((response) => {
+          results.push(...response[fieldName]);
+        });
       }
     }
 
+    return results;
+  }
+
+  private async getPaginatedSingleThread<T>(path: string, fieldName: string): Promise<T[]> {
+    const url = `${this.options.endPoint}${path}`;
+    const results = [];
+
+    const { next, [fieldName]: data } = await this.get<any>(url);
+    results.push(...data);
+
+    let nextUrl = next
+    if (nextUrl) {
+      while (nextUrl != null) {
+        const { next, [fieldName]: data } = await this.get<any>(nextUrl);
+        nextUrl = next
+        results.push(...data)
+      }
+    }
     return results;
   }
 
