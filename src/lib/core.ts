@@ -9,6 +9,11 @@ interface Options {
   parallelRequests: number;
 }
 
+interface NFTsByCollectionParams {
+  order?: Order;
+  endpoint?: string;
+}
+
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 class SimpleHashAPI {
@@ -35,8 +40,13 @@ class SimpleHashAPI {
    * 
    * @param collectionId The unique identifier of the collection (obtainable from an NFT response, or from the Collection ID Lookup endpoint)
    */
-  public async nftsByCollection(collectionId: string, orderBy: Order = 'timestamp_desc') {
-    const path = `collection/${collectionId}`;
+  public async nftsByCollection(collectionId: string, params?: NFTsByCollectionParams) {
+    params = {
+      order: 'timestamp_desc',
+      endpoint: 'collection',
+      ...params,
+    }
+    const path = `${params.endpoint}/${collectionId}`;
     return this.getPaginated<NFT>(path, 'nfts');
   }
 
