@@ -14,7 +14,7 @@ interface NFTsByCollectionParams {
   endpoint?: string;
 }
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 class SimpleHashAPI {
   private readonly options: Options = {
@@ -31,13 +31,13 @@ class SimpleHashAPI {
     this.options = {
       ...this.options,
       ...options,
-    }
+    };
   }
 
   /**
    * This endpoint is commonly used to retrieve metadata of all of the NFTs on a single collection
    * To understand more about the difference between Collections and Contracts, please refer to our FAQ
-   * 
+   *
    * @param collectionId The unique identifier of the collection (obtainable from an NFT response, or from the Collection ID Lookup endpoint)
    */
   public async nftsByCollection(collectionId: string, params?: NFTsByCollectionParams) {
@@ -45,7 +45,7 @@ class SimpleHashAPI {
       order: 'timestamp_desc',
       endpoint: 'collection',
       ...params,
-    }
+    };
     const path = `${params.endpoint}/${collectionId}`;
     return this.getPaginated<NFT>(path, 'nfts');
   }
@@ -54,12 +54,20 @@ class SimpleHashAPI {
    * This endpoint is commonly used to pass specific wallet addresses to get back the metadata of the NFTs held by them:
    * @param chains Name of the chain(s) (e.g., optimism), comma-separated for multiple values (e.g, optimism,ethereum)
    * @param walletAddresses Owner wallet address(es), comma-separated for multiple values (e.g., 0xa12,0xb34). Limit of 20 addresses.
+   * @param queriedWalletBalances The quantity owned and acquired dates of each NFT for each wallet (useful for ERC1155s) (pass queried_wallet_balances=1)
    * @returns Array of NFTs
    */
-  public async nftsByOwners(chains: Chain[], walletAddresses: string[]): Promise<NFT[]> {
+  public async nftsByOwners(
+    chains: Chain[],
+    walletAddresses: string[],
+    queriedWalletBalances?: number,
+  ): Promise<NFT[]> {
     const chain = chains.join(',');
     const wallet = walletAddresses.join(',');
-    const url = `owners?chains=${chain}&wallet_addresses=${wallet}`;
+    let url = `owners?chains=${chain}&wallet_addresses=${wallet}`;
+    if (queriedWalletBalances) {
+      url += `&queried_wallet_balances=${queriedWalletBalances}`;
+    }
     return this.getPaginatedSingleThread<NFT>(url, 'nfts');
   }
 
@@ -70,7 +78,11 @@ class SimpleHashAPI {
    * @param orderBy Available values are timestamp_desc (default) or timestamp_asc
    * @returns Array of transfers
    */
-  public async transfersByWallets(chains: Chain[], walletAddresses: string[], orderBy: Order = 'timestamp_desc'): Promise<Transfer[]> {
+  public async transfersByWallets(
+    chains: Chain[],
+    walletAddresses: string[],
+    orderBy: Order = 'timestamp_desc',
+  ): Promise<Transfer[]> {
     const chain = chains.join(',');
     const wallet = walletAddresses.join(',');
     const url = `transfers/wallets?chains=${chain}&wallet_addresses=${wallet}&order_by=${orderBy}`;
@@ -85,7 +97,12 @@ class SimpleHashAPI {
    * @param orderBy Available values are timestamp_desc (default) or timestamp_asc
    * @returns Array of transfers
    */
-  public async transfersByNft(chain: Chain, contractAddress: string, tokenId = '', orderBy: Order = 'timestamp_desc'): Promise<Transfer[]> {
+  public async transfersByNft(
+    chain: Chain,
+    contractAddress: string,
+    tokenId = '',
+    orderBy: Order = 'timestamp_desc',
+  ): Promise<Transfer[]> {
     if (chain !== 'solana' && tokenId === '') {
       throw new Error('tokenId is required for non-solana chains');
     }
@@ -106,17 +123,17 @@ class SimpleHashAPI {
   }
 
   /**
-   * This endpoint is commonly used to pass a chain, contract address, 
+   * This endpoint is commonly used to pass a chain, contract address,
    * and token_id and get the full list of wallets owning this NFT.
    * The number of owners may be more than 1 in the case of ERC-1155 tokens, or 0 for burned tokens.
-   * 
+   *
    * This endpoint is paginated to 1,000 items per response
-   * 
+   *
    * On Solana, only the chain and contract address should be supplied
-   * @param chain 
-   * @param contractAddress 
-   * @param token_id 
-   * @returns 
+   * @param chain
+   * @param contractAddress
+   * @param token_id
+   * @returns
    */
   public async ownersByNft(chain: Chain, contractAddress: string, token_id: string) {
     const url = `owners/${chain}/${contractAddress}/${token_id}`;
@@ -125,14 +142,18 @@ class SimpleHashAPI {
 
   /**
    * This endpoint is used to obtain the unique identifier for an NFT Collection
-   * These identifiers can be then passed to the NFTs by Collection endpoint. 
-   * Either the metaplex_mint OR the marketplace_collection_id + marketplace_name 
+   * These identifiers can be then passed to the NFTs by Collection endpoint.
+   * Either the metaplex_mint OR the marketplace_collection_id + marketplace_name
    * query params should be provided.
    * @param metaplexMint Metaplex mint address
    * @param marketplaceCollectionId Marketplace collection ID
    * @param marketplaceName Marketplace name
    */
-  public async collectionIDLookup(metaplexMint = '', marketplaceCollectionId = '', marketplaceName: Marketplace = 'opensea') {
+  public async collectionIDLookup(
+    metaplexMint = '',
+    marketplaceCollectionId = '',
+    marketplaceName: Marketplace = 'opensea',
+  ) {
     let url = 'collections?';
     if (metaplexMint) {
       url = `${url}metaplex_mint=${metaplexMint}`;
@@ -144,7 +165,18 @@ class SimpleHashAPI {
 
     return this.getPaginated<CollectionInfo>(url, 'collections');
   }
-  
+  /**
+   * This endpoint use to get NFT details of given chain,contract address and token id of NFT
+   *
+   * @param chain Name of the chain
+   * @param contractAddress Address of the NFT contract
+   * @param tokenId Token ID of the given NFT
+   */
+  public async nftByTokenId(chain: string, contractAddress: string, tokenId: string) {
+    const url = `${this.options.endPoint}${chain}/${contractAddress}/${tokenId}`;
+    return this.get(url);
+  }
+
   private async getPaginated<T>(path: string, fieldName: string): Promise<T[]> {
     const url = `${this.options.endPoint}${path}`;
     const results: T[] = [];
@@ -168,7 +200,6 @@ class SimpleHashAPI {
 
       let position = size;
       while (position < count) {
-
         let i = 0;
         const promises = [];
 
@@ -202,12 +233,12 @@ class SimpleHashAPI {
     const { next, [fieldName]: data } = await this.get<any>(url);
     results.push(...data);
 
-    let nextUrl = next
+    let nextUrl = next;
     if (nextUrl) {
       while (nextUrl != null) {
         const { next, [fieldName]: data } = await this.get<any>(nextUrl);
-        nextUrl = next
-        results.push(...data)
+        nextUrl = next;
+        results.push(...data);
       }
     }
     return results;
@@ -216,16 +247,13 @@ class SimpleHashAPI {
   private async get<T>(url: string, params = {}): Promise<T> {
     await this.waitForFloodControl();
     try {
-      const response = await axios.get<T>(
-        url,
-        {
-          params,
-          headers: {
-            Accept: 'application/json',
-            'x-api-key': this.apiKey,
-          },
-        }
-      );
+      const response = await axios.get<T>(url, {
+        params,
+        headers: {
+          Accept: 'application/json',
+          'x-api-key': this.apiKey,
+        },
+      });
       const json = response.data;
       return json;
     } catch (error) {
@@ -251,7 +279,4 @@ function createApi(apiKey: string, options?: Partial<Options>) {
   return new SimpleHashAPI(apiKey, options);
 }
 
-export {
-  createApi,
-  Options,
-};
+export { createApi, Options };
