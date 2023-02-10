@@ -54,7 +54,7 @@ class SimpleHashAPI {
    * This endpoint is commonly used to pass specific wallet addresses to get back the metadata of the NFTs held by them:
    * @param chains Name of the chain(s) (e.g., optimism), comma-separated for multiple values (e.g, optimism,ethereum)
    * @param walletAddresses Owner wallet address(es), comma-separated for multiple values (e.g., 0xa12,0xb34). Limit of 20 addresses.
-   * @param queriedWalletBalances For get each token quantity for Owner wallet address
+   * @param queriedWalletBalances The quantity owned and acquired dates of each NFT for each wallet (useful for ERC1155s) (pass queried_wallet_balances=1)
    * @returns Array of NFTs
    */
   public async nftsByOwners(
@@ -66,7 +66,7 @@ class SimpleHashAPI {
     const wallet = walletAddresses.join(',');
     let url = `owners?chains=${chain}&wallet_addresses=${wallet}`;
     if (queriedWalletBalances) {
-      url = `owners?chains=${chain}&wallet_addresses=${wallet}&queried_wallet_balances=${queriedWalletBalances}`;
+      url += `&queried_wallet_balances=${queriedWalletBalances}`;
     }
     return this.getPaginatedSingleThread<NFT>(url, 'nfts');
   }
