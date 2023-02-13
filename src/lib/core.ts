@@ -172,7 +172,7 @@ class SimpleHashAPI {
    * @param contractAddress Address of the NFT contract
    * @param tokenId Token ID of the given NFT
    */
-  public async nftByTokenId(chain: string, contractAddress: string, tokenId: string) {
+  public async nftByTokenId(chain: string, contractAddress: string, tokenId: string): Promise<NFT> {
     const url = `${this.options.endPoint}${chain}/${contractAddress}/${tokenId}`;
     return this.get(url);
   }
