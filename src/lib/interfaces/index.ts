@@ -114,7 +114,7 @@ export interface NFT {
   };
   background_color?: string;
   external_url?: string;
-  created_date?: string;
+  created_date?: Date;
   status: 'minted' | 'burned';
   token_count: number;
   owner_count: number;
