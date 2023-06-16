@@ -17,4 +17,4 @@ jobs:
           git config user.name github-actions
           git config user.email github-actions[bot]@users.noreply.github.com
           npm version patch
-          git push --follow-tags --forcs
+          git push --follow-tags --force
