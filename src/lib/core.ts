@@ -51,6 +51,25 @@ class SimpleHashAPI {
   }
 
   /**
+   * This endpoint is commonly used to retrieve metadata of all of the NFTs on a single contract (e.g., Mutant Ape Yacht Club):
+   * Pass a chain and contract address to get back information on the NFTs in this contract
+   * To understand more about the difference between Collections and Contracts, please refer to our FAQ
+   * On Solana, this endpoint will function identically to NFT by Token ID
+   * On Flow, the current list of contracts with metadata can be found here
+   *
+   * @param collectionId The unique identifier of the collection (obtainable from an NFT response, or from the Collection ID Lookup endpoint)
+   */
+  public async nftsByContract(chain: Chain, contractAddress: string, params?: NFTsByCollectionParams) {
+    params = {
+      order: 'timestamp_desc',
+      endpoint: chain,
+      ...params,
+    };
+    const path = `${params.endpoint}/${contractAddress}`;
+    return this.getPaginated<NFT>(path, 'nfts');
+  }
+
+  /**
    * This endpoint is commonly used to pass specific wallet addresses to get back the metadata of the NFTs held by them:
    * @param chains Name of the chain(s) (e.g., optimism), comma-separated for multiple values (e.g, optimism,ethereum)
    * @param walletAddresses Owner wallet address(es), comma-separated for multiple values (e.g., 0xa12,0xb34). Limit of 20 addresses.
