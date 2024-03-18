@@ -250,7 +250,11 @@ class SimpleHashAPI {
     const results = [];
 
     const { next, [fieldName]: data } = await this.get<any>(url);
-    results.push(...data);
+    if (data instanceof Array) {
+      results.push(...data);
+    } else {
+      return [];
+    }
 
     let nextUrl = next;
     if (nextUrl) {
