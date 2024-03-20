@@ -201,11 +201,7 @@ class SimpleHashAPI {
     const results: T[] = [];
 
     const { next, [fieldName]: data, count } = await this.get<any>(url, { count: 1 });
-    if (data instanceof Array) {
-      results.push(...data);
-    } else {
-      return [];
-    }
+    results.push(...data);
 
     const nextRegex = new RegExp('.0+([0-9]+)__next$', 'gm');
 
@@ -254,20 +250,14 @@ class SimpleHashAPI {
     const results = [];
 
     const { next, [fieldName]: data } = await this.get<any>(url);
-    if (data instanceof Array) {
-      results.push(...data);
-    } else {
-      return [];
-    }
+    results.push(...data);
 
     let nextUrl = next;
     if (nextUrl) {
       while (nextUrl != null) {
         const { next, [fieldName]: data } = await this.get<any>(nextUrl);
         nextUrl = next;
-        if (data instanceof Array) {
-          results.push(...data);
-        }
+        results.push(...data);
       }
     }
     return results;
